@@ -496,9 +496,51 @@ curl -X POST http://localhost:<span class="port-placeholder">3000</span>/api/sen
         </div>
       </div>
 
+      <!-- MCP SSE/Streamable HTTP 端点 -->
+      <div class="card">
+        <div class="card-title">MCP 协议端点（SSE / Streamable HTTP）</div>
+        <p style="color:var(--text2); font-size:14px; margin-bottom:16px;">
+          以下端点供 MCP 客户端（如 Notion、Claude Desktop、CodeBuddy 等）直接连接。
+        </p>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-get">GET</span>
+            <span class="api-path">/sse</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">建立 SSE 连接（旧版 MCP 传输，Notion 等客户端使用）</p>
+          <pre class="code-block">// 客户端连接此端点建立 SSE 流
+// 服务器返回 endpoint 事件，告知客户端 POST 消息到 /mcp?sessionId=xxx
+
+// 如果配置了 MCP_AUTH_TOKEN，需要携带 Authorization 头
+// Authorization: Bearer &lt;your-token&gt;</pre>
+        </div>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/mcp</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">
+            MCP 消息端点（兼容 SSE 和 Streamable HTTP 两种模式）
+          </p>
+          <pre class="code-block">// SSE 模式：POST /mcp?sessionId=xxx
+// Streamable HTTP 模式：POST /mcp（带 Mcp-Session-Id 头）</pre>
+        </div>
+      </div>
+
       <!-- MCP 接入配置 -->
       <div class="card">
         <div class="card-title">MCP 客户端接入配置</div>
+
+        <h3 style="font-size:14px; margin-bottom:12px; color:var(--text);">🌐 远程 HTTP 模式（Notion、Web 客户端）</h3>
+        <pre class="code-block">MCP 服务器 URL: https://&lt;你的域名或IP&gt;/sse
+
+验证方式:
+  - 未设置 MCP_AUTH_TOKEN → 无需验证
+  - 已设置 MCP_AUTH_TOKEN → Bearer Token 验证</pre>
+
+        <h3 style="font-size:14px; margin: 16px 0 12px; color:var(--text);">💻 本地 stdio 模式（Claude Desktop、Cursor 等）</h3>
         <pre class="code-block">{
   "mcpServers": {
     "feishu-webhook": {

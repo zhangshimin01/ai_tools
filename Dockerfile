@@ -28,6 +28,7 @@ VOLUME /app/data
 
 ENV SERVER_PORT=3000
 ENV DATA_DIR=/app/data
+ENV MCP_TRANSPORT=httponly
 EXPOSE 3000
 
 # 健康检查
