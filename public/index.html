@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>飞书 MCP Server 管理</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242733;
+      --border: #2e3142;
+      --text: #e4e5ea;
+      --text2: #9295a5;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --warning: #f59e0b;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text2);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    /* ── Tab Bar ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text2);
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface2); }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Form Elements ── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+    input[type="text"], input[type="url"], textarea, select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Webhook List ── */
+    .webhook-list { display: flex; flex-direction: column; gap: 12px; }
+    .webhook-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: border-color .2s;
+    }
+    .webhook-item:hover { border-color: var(--primary); }
+    .webhook-info { flex: 1; min-width: 0; }
+    .webhook-name {
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .webhook-url {
+      font-size: 13px;
+      color: var(--text2);
+      font-family: "SF Mono", "Fira Code", monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+    .badge-default { background: rgba(59,130,246,.15); color: var(--primary); }
+    .webhook-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── History Table ── */
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .history-table th {
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--text2);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .history-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-text {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status-ok { color: var(--success); font-weight: 600; }
+    .status-fail { color: var(--danger); font-weight: 600; }
+
+    /* ── API Docs ── */
+    .api-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .api-method {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: monospace;
+      margin-right: 8px;
+    }
+    .method-post { background: rgba(59,130,246,.15); color: var(--primary); }
+    .method-get { background: rgba(34,197,94,.15); color: var(--success); }
+    .api-path {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 14px;
+    }
+    pre.code-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 13px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      overflow-x: auto;
+      color: var(--text2);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      animation: slideIn .3s ease;
+      max-width: 400px;
+      box-shadow: var(--shadow);
+    }
+    .toast-success { background: var(--success); color: #fff; }
+    .toast-error { background: var(--danger); color: #fff; }
+    .toast-info { background: var(--primary); color: #fff; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 480px;
+      max-width: 90vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+    .modal h2 { font-size: 18px; margin-bottom: 20px; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text2);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .header { padding: 12px 16px; }
+      .container { padding: 16px 12px; }
+      .webhook-item { flex-direction: column; align-items: stretch; }
+      .webhook-actions { justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">🤖</div>
+      <h1>飞书 MCP Server</h1>
+    </div>
+    <div class="header-status">
+      <span class="status-dot"></span>
+      <span id="serverStatus">运行中</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="webhooks">Webhook 管理</button>
+      <button class="tab-btn" data-tab="send">发送测试</button>
+      <button class="tab-btn" data-tab="history">发送记录</button>
+      <button class="tab-btn" data-tab="api">API 文档</button>
+    </div>
+
+    <!-- ── Tab: Webhook 管理 ── -->
+    <div id="tab-webhooks" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">
+          <span>已配置的 Webhook</span>
+          <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ 添加</button>
+        </div>
+        <div id="webhookList" class="webhook-list">
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <p>暂无 Webhook，点击上方"+ 添加"开始配置</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab: 发送测试 ── -->
+    <div id="tab-send" class="tab-panel">
+      <div class="card">
+        <div class="card-title">发送测试消息</div>
+        <div class="form-group">
+          <label>选择 Webhook</label>
+          <select id="sendWebhookSelect">
+            <option value="">使用默认 Webhook</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>消息内容 *</label>
+          <textarea id="sendText" placeholder="输入要发送的纯文本消息..."></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="sendTestMessage()">📤 发送</button>
+        </div>
+        <pre id="sendResult" class="code-block" style="display:none; margin-top:16px;"></pre>
+      </div>
+    </div>
+
+    <!-- ── Tab: 发送记录 ── -->
+    <div id="tab-history" class="tab-panel">
+      <div class="card">
+        <div class="card-title">
+          <span>最近发送记录</span>
+          <button class="btn btn-ghost btn-sm" onclick="refreshHistory()">🔄 刷新</button>
+        </div>
+        <div id="historyContent">
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <p>暂无发送记录</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab: API 文档 ── -->
+    <div id="tab-api" class="tab-panel">
+      <div class="card">
+        <div class="card-title">HTTP API 接口说明</div>
+        <p style="color:var(--text2); font-size:14px; margin-bottom:20px;">
+          以下 API 可供其他应用直接调用，无需 MCP 协议。基础 URL 即本服务地址。
+        </p>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/api/send</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">发送纯文本消息到飞书群</p>
+          <pre class="code-block">// 请求体 (JSON)
+{
+  "text": "消息内容",             // 必填
+  "webhookUrl": "https://...",   // 可选，不传则用默认
+  "webhookId": "xxx"             // 可选，用已配置的 webhook ID
+}
+
+// 成功响应
+{
+  "ok": true,
+  "httpStatus": 200,
+  "feishuCode": 0,
+  "feishuMsg": "success",
+  "raw": "{...}"
+}
+
+// curl 示例
+curl -X POST http://localhost:<span class="port-placeholder">3000</span>/api/send \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello from API!"}'</pre>
+        </div>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-get">GET</span>
+            <span class="api-path">/api/webhooks</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">获取所有已配置的 Webhook 列表</p>
+        </div>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-post">POST</span>
+            <span class="api-path">/api/webhooks</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">添加新的 Webhook 配置</p>
+          <pre class="code-block">// 请求体
+{
+  "name": "生产群",
+  "url": "https://open.feishu.cn/open-apis/bot/v2/hook/xxx",
+  "isDefault": true
+}</pre>
+        </div>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-get">GET</span>
+            <span class="api-path">/api/history?limit=50</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">获取发送记录</p>
+        </div>
+
+        <div class="api-block">
+          <div>
+            <span class="api-method method-get">GET</span>
+            <span class="api-path">/healthz</span>
+          </div>
+          <p style="color:var(--text2); font-size:13px; margin-top:8px;">健康检查</p>
+        </div>
+      </div>
+
+      <!-- MCP 接入配置 -->
+      <div class="card">
+        <div class="card-title">MCP 客户端接入配置</div>
+        <pre class="code-block">{
+  "mcpServers": {
+    "feishu-webhook": {
+      "command": "node",
+      "args": ["path/to/feishu-mcp-server/dist/index.js"],
+      "env": {
+        "SERVER_PORT": "3000"
+      }
+    }
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add/Edit Modal ── -->
+  <div id="webhookModal" class="modal-overlay">
+    <div class="modal">
+      <h2 id="modalTitle">添加 Webhook</h2>
+      <input type="hidden" id="editId" />
+      <div class="form-group">
+        <label>名称 *</label>
+        <input type="text" id="modalName" placeholder="例: 项目通知群" />
+      </div>
+      <div class="form-group">
+        <label>Webhook URL *</label>
+        <input type="url" id="modalUrl" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." />
+      </div>
+      <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="modalDefault" style="width:auto;" />
+        <label for="modalDefault" style="margin:0; cursor:pointer;">设为默认</label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveWebhook()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script>
+    // ── API Base ──
+    const API = '';
+
+    // ── Toast ──
+    function toast(msg, type = 'info') {
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.textContent = msg;
+      document.getElementById('toastContainer').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── Tabs ──
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+
+        if (btn.dataset.tab === 'history') refreshHistory();
+        if (btn.dataset.tab === 'send') refreshSendSelect();
+      });
+    });
+
+    // ── Webhooks ──
+    async function loadWebhooks() {
+      try {
+        const res = await fetch(`${API}/api/webhooks`);
+        const { data } = await res.json();
+        renderWebhooks(data || []);
+        return data || [];
+      } catch (e) {
+        toast('加载 Webhook 失败', 'error');
+        return [];
+      }
+    }
+
+    function renderWebhooks(list) {
+      const container = document.getElementById('webhookList');
+      if (!list.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <p>暂无 Webhook，点击上方"+ 添加"开始配置</p>
+          </div>`;
+        return;
+      }
+      container.innerHTML = list.map(w => `
+        <div class="webhook-item">
+          <div class="webhook-info">
+            <div class="webhook-name">
+              ${esc(w.name)}
+              ${w.isDefault ? '<span class="badge badge-default">默认</span>' : ''}
+            </div>
+            <div class="webhook-url">${esc(w.urlMasked || w.url)}</div>
+          </div>
+          <div class="webhook-actions">
+            ${!w.isDefault ? `<button class="btn btn-ghost btn-sm" onclick="setDefault('${w.id}')">设为默认</button>` : ''}
+            <button class="btn btn-ghost btn-sm" onclick="editWebhook('${w.id}','${esc(w.name)}','${esc(w.url)}',${w.isDefault})">编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="removeWebhook('${w.id}')">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // ── Modal ──
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = '添加 Webhook';
+      document.getElementById('editId').value = '';
+      document.getElementById('modalName').value = '';
+      document.getElementById('modalUrl').value = '';
+      document.getElementById('modalDefault').checked = false;
+      document.getElementById('webhookModal').classList.add('show');
+    }
+
+    function editWebhook(id, name, url, isDefault) {
+      document.getElementById('modalTitle').textContent = '编辑 Webhook';
+      document.getElementById('editId').value = id;
+      document.getElementById('modalName').value = name;
+      document.getElementById('modalUrl').value = url;
+      document.getElementById('modalDefault').checked = isDefault;
+      document.getElementById('webhookModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('webhookModal').classList.remove('show');
+    }
+
+    async function saveWebhook() {
+      const id = document.getElementById('editId').value;
+      const name = document.getElementById('modalName').value.trim();
+      const url = document.getElementById('modalUrl').value.trim();
+      const isDefault = document.getElementById('modalDefault').checked;
+
+      if (!name || !url) {
+        toast('名称和 URL 为必填', 'error');
+        return;
+      }
+
+      try {
+        if (id) {
+          await fetch(`${API}/api/webhooks/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, url, isDefault }),
+          });
+          toast('Webhook 已更新', 'success');
+        } else {
+          await fetch(`${API}/api/webhooks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, url, isDefault }),
+          });
+          toast('Webhook 已添加', 'success');
+        }
+        closeModal();
+        loadWebhooks();
+      } catch (e) {
+        toast('保存失败: ' + e.message, 'error');
+      }
+    }
+
+    async function removeWebhook(id) {
+      if (!confirm('确认删除此 Webhook？')) return;
+      try {
+        await fetch(`${API}/api/webhooks/${id}`, { method: 'DELETE' });
+        toast('已删除', 'success');
+        loadWebhooks();
+      } catch (e) {
+        toast('删除失败', 'error');
+      }
+    }
+
+    async function setDefault(id) {
+      try {
+        await fetch(`${API}/api/webhooks/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isDefault: true }),
+        });
+        toast('已设为默认', 'success');
+        loadWebhooks();
+      } catch (e) {
+        toast('操作失败', 'error');
+      }
+    }
+
+    // ── Send Test ──
+    async function refreshSendSelect() {
+      const select = document.getElementById('sendWebhookSelect');
+      const list = await loadWebhooks();
+      select.innerHTML = '<option value="">使用默认 Webhook</option>' +
+        list.map(w => `<option value="${w.id}">${esc(w.name)}${w.isDefault ? ' (默认)' : ''}</option>`).join('');
+    }
+
+    async function sendTestMessage() {
+      const webhookId = document.getElementById('sendWebhookSelect').value;
+      const text = document.getElementById('sendText').value.trim();
+      const resultEl = document.getElementById('sendResult');
+
+      if (!text) {
+        toast('请输入消息内容', 'error');
+        return;
+      }
+
+      resultEl.style.display = 'block';
+      resultEl.textContent = '发送中...';
+
+      try {
+        const body = { text };
+        if (webhookId) body.webhookId = webhookId;
+
+        const res = await fetch(`${API}/api/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        resultEl.textContent = JSON.stringify(data, null, 2);
+
+        if (data.ok) {
+          toast('消息发送成功！', 'success');
+        } else {
+          toast('发送失败: ' + (data.feishuMsg || data.error || '未知错误'), 'error');
+        }
+      } catch (e) {
+        resultEl.textContent = '请求异常: ' + e.message;
+        toast('请求异常', 'error');
+      }
+    }
+
+    // ── History ──
+    async function refreshHistory() {
+      try {
+        const res = await fetch(`${API}/api/history?limit=50`);
+        const { data } = await res.json();
+        renderHistory(data || []);
+      } catch (e) {
+        toast('加载记录失败', 'error');
+      }
+    }
+
+    function renderHistory(list) {
+      const container = document.getElementById('historyContent');
+      if (!list.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <p>暂无发送记录</p>
+          </div>`;
+        return;
+      }
+      container.innerHTML = `
+        <div style="overflow-x:auto;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>状态</th>
+                <th>Webhook</th>
+                <th>消息内容</th>
+                <th>飞书响应</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(r => `
+                <tr>
+                  <td><span class="${r.ok ? 'status-ok' : 'status-fail'}">${r.ok ? '✓ 成功' : '✗ 失败'}</span></td>
+                  <td>${esc(r.webhookName)}</td>
+                  <td class="history-text" title="${esc(r.text)}">${esc(r.text)}</td>
+                  <td style="font-size:12px;color:var(--text2);">
+                    ${r.feishuCode !== null ? `code: ${r.feishuCode}` : ''}
+                    ${r.feishuMsg ? `<br>${esc(r.feishuMsg)}` : ''}
+                  </td>
+                  <td style="white-space:nowrap; font-size:12px; color:var(--text2);">
+                    ${new Date(r.timestamp).toLocaleString('zh-CN')}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    // ── Health Check ──
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${API}/healthz`);
+        const data = await res.json();
+        document.getElementById('serverStatus').textContent =
+          data.status === 'ok' ? '运行中' : '异常';
+      } catch {
+        document.getElementById('serverStatus').textContent = '连接失败';
+      }
+    }
+
+    // ── Init ──
+    loadWebhooks();
+    checkHealth();
+    setInterval(checkHealth, 30000);
+  </script>
+</body>
+</html>
