@@ -236,8 +236,11 @@ async function handleRequest(
   // GET /api/webhooks
   if (method === "GET" && pathname === "/api/webhooks") {
     const webhooks = getWebhooks().map((w) => ({
-      ...w,
+      id: w.id,
+      name: w.name,
       urlMasked: maskWebhookUrl(w.url),
+      isDefault: w.isDefault,
+      createdAt: w.createdAt,
     }));
     json(res, 200, { ok: true, data: webhooks });
     return;

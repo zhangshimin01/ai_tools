@@ -639,11 +639,11 @@ curl -X POST http://localhost:<span class="port-placeholder">3000</span>/api/sen
               ${esc(w.name)}
               ${w.isDefault ? '<span class="badge badge-default">默认</span>' : ''}
             </div>
-            <div class="webhook-url">${esc(w.urlMasked || w.url)}</div>
+            <div class="webhook-url">${esc(w.urlMasked)}</div>
           </div>
           <div class="webhook-actions">
             ${!w.isDefault ? `<button class="btn btn-ghost btn-sm" onclick="setDefault('${w.id}')">设为默认</button>` : ''}
-            <button class="btn btn-ghost btn-sm" onclick="editWebhook('${w.id}','${esc(w.name)}','${esc(w.url)}',${w.isDefault})">编辑</button>
+            <button class="btn btn-ghost btn-sm" onclick="editWebhook('${w.id}','${esc(w.name)}',${w.isDefault})">编辑</button>
             <button class="btn btn-danger btn-sm" onclick="removeWebhook('${w.id}')">删除</button>
           </div>
         </div>
@@ -666,11 +666,12 @@ curl -X POST http://localhost:<span class="port-placeholder">3000</span>/api/sen
       document.getElementById('webhookModal').classList.add('show');
     }
 
-    function editWebhook(id, name, url, isDefault) {
+    function editWebhook(id, name, isDefault) {
       document.getElementById('modalTitle').textContent = '编辑 Webhook';
       document.getElementById('editId').value = id;
       document.getElementById('modalName').value = name;
-      document.getElementById('modalUrl').value = url;
+      document.getElementById('modalUrl').value = '';
+      document.getElementById('modalUrl').placeholder = '留空则保持原地址不变';
       document.getElementById('modalDefault').checked = isDefault;
       document.getElementById('webhookModal').classList.add('show');
     }
@@ -685,17 +686,25 @@ curl -X POST http://localhost:<span class="port-placeholder">3000</span>/api/sen
       const url = document.getElementById('modalUrl').value.trim();
       const isDefault = document.getElementById('modalDefault').checked;
 
-      if (!name || !url) {
-        toast('名称和 URL 为必填', 'error');
+      if (!name) {
+        toast('名称为必填', 'error');
+        return;
+      }
+
+      // 新增时 URL 必填，编辑时可留空（保持原地址）
+      if (!id && !url) {
+        toast('URL 为必填', 'error');
         return;
       }
 
       try {
         if (id) {
+          const body = { name, isDefault };
+          if (url) body.url = url;  // 有填写才更新 URL
           await fetch(`${API}/api/webhooks/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, url, isDefault }),
+            body: JSON.stringify(body),
           });
           toast('Webhook 已更新', 'success');
         } else {
@@ -707,6 +716,8 @@ curl -X POST http://localhost:<span class="port-placeholder">3000</span>/api/sen
           toast('Webhook 已添加', 'success');
         }
         closeModal();
+        // 重置 placeholder
+        document.getElementById('modalUrl').placeholder = 'https://open.feishu.cn/open-apis/bot/v2/hook/...';
         loadWebhooks();
       } catch (e) {
         toast('保存失败: ' + e.message, 'error');
